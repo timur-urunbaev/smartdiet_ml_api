@@ -1,3 +1,5 @@
+"""SmartDiet API """
+
 import os
 import io
 import tempfile

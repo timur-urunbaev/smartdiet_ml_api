@@ -9,10 +9,10 @@ from typing import List, Tuple, Dict, Any
 import numpy as np
 import faiss
 
-from config import Config
-from feature_extractor import FeatureExtractor
-from data_manager import DataManager
-from utils import setup_logging
+from .config import Config
+from .feature_extractor import FeatureExtractor
+from .data_manager import DataManager
+from .utils import setup_logging
 
 
 # === Search Engine Class ===

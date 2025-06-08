@@ -22,7 +22,7 @@ from config import Config
 
 warnings.filterwarnings('ignore')
 
-# === Feature Extractor Class ===
+
 class FeatureExtractor:
     """Encapsulated feature extraction using pre-trained models."""
 
@@ -39,10 +39,10 @@ class FeatureExtractor:
         # Support for different model architectures
         if self.config.model_name == "resnet50":
             model = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V2)
-            model.fc = nn.Identity()
+            model.fc = nn.Identity() # type: ignore
         elif self.config.model_name == "efficientnet_b0":
             model = models.efficientnet_b0(weights=models.EfficientNet_B0_Weights.IMAGENET1K_V1)
-            model.classifier = nn.Identity()
+            model.classifier = nn.Identity() # type: ignore
         else:
             raise ValueError(f"Unsupported model: {self.config.model_name}")
 
@@ -62,7 +62,11 @@ class FeatureExtractor:
         """Extract features from a single image."""
         try:
             img = Image.open(image_path).convert("RGB")
-            x = self.transform(img).unsqueeze(0).to(self.config.device)
+            transformed = self.transform(img)
+            if not isinstance(transformed, torch.Tensor):
+                transformed = T.ToTensor()(transformed)
+            # x = self.transform(img).unsqueeze(0).to(self.config.device)
+            x = transformed.unsqueeze(0).to(self.config.device)
 
             with torch.no_grad():
                 features = self.model(x).cpu().numpy().flatten()

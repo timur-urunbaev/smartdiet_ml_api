@@ -3,7 +3,7 @@
 import logging
 from typing import List
 
-from config import Config
+from .config import Config
 
 
 def setup_logging(config: Config) -> logging.Logger:
