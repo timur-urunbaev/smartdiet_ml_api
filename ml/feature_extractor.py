@@ -18,7 +18,7 @@ import numpy as np
 from tqdm import tqdm
 import warnings
 
-from config import Config
+from .config import Config
 
 warnings.filterwarnings('ignore')
 

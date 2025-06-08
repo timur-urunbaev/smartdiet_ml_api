@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 import torch
 
-# === Configuration Class ===
+
 @dataclass
 class Config:
     """Configuration parameters for the image retrieval system."""
