@@ -34,9 +34,10 @@ class DataManager:
             if not folder.is_dir():
                 continue
 
-            for img_file in folder.glob("*.jpg"):
-                image_paths.append(str(img_file))
-                product_ids.append(folder.name)
+            for img_file in folder.rglob("*"):
+                if img_file.suffix.lower() in [".jpg", ".jpeg", ".png", ".webp"]:
+                    image_paths.append(str(img_file))
+                    product_ids.append(folder.name)
 
         self.logger.info(f"Loaded {len(image_paths)} images from {len(set(product_ids))} categories")
         return image_paths, product_ids
