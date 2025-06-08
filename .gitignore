@@ -8,3 +8,67 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Data
+data/
+data/*
+cache/
+cache/*
+
+# Research and Notebooks
+notebooks/
+
+# Jupyter notebooks checkpoints
+*.ipynb_checkpoints/
+
+# Environments
+.env
+.env.*
+
+# Bytecode and logs
+logs/
+logs/*
+*.log
+*.log.*
+*.pot
+*.pyc
+*.pyd
+*.pdb
+
+# Temporary files
+*.tmp
+*.tmp.*
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# uv virtual environment (uv uses `.venv` by default)
+.venv/
+
+# VS Code settings
+.vscode/
+
+# macOS metadata
+.DS_Store
+
+# Test/coverage outputs
+.coverage
+htmlcov/
+.tox/
+.nox/
+pytest_cache/
+
+# Mypy and Pyright cache
+.mypy_cache/
+.pyright/
+
+# Coverage reports
+coverage.xml
+
+# Static analysis tools
+.cache/
+.pytest_cache/
+ruff_cache/
+dmypy.json
