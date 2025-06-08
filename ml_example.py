@@ -1,7 +1,6 @@
 """Main function demonstrating usage."""
 
-from .config import Config
-from .image_search_engine import ImageSearchEngine
+from ml import Config, ImageSearchEngine
 
 
 def main():
@@ -23,7 +22,7 @@ def main():
     for key, value in stats.items():
         print(f"  {key}: {value}")
 
-    query_image = "/content/test_kinder.jpg"
+    query_image = "./data/test_kinder.jpg"
     results = search_engine.search(query_image, top_k=5)
 
     print(f"\n🔍 Top {len(results)} similar products for query image:")

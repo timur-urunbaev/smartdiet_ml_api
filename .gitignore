@@ -9,9 +9,23 @@ wheels/
 # Virtual environments
 .venv
 
+# Data
+data/
+data/*
+
 # Research and Notebooks
 notebooks/
 *.ipynb_checkpoints/
 
 # Environment
 .env
+
+# Logs
+logs/
+logs/*
+*.log
+*.log.*
+
+# Temporary files
+*.tmp
+*.tmp.*
