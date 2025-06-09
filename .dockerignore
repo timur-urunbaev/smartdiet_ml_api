@@ -1,0 +1,64 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Data
+data/
+data/*
+cache/
+cache/*
+
+# Research and Notebooks
+notebooks/
+
+# Jupyter notebooks checkpoints
+*.ipynb_checkpoints/
+
+# Bytecode and logs
+logs/
+logs/*
+*.log
+*.log.*
+*.pot
+*.pyc
+*.pyd
+*.pdb
+
+# Temporary files
+*.tmp
+*.tmp.*
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# VS Code settings
+.vscode/
+
+# macOS metadata
+.DS_Store
+
+# Test/coverage outputs
+.coverage
+htmlcov/
+.tox/
+.nox/
+pytest_cache/
+
+# Mypy and Pyright cache
+.mypy_cache/
+.pyright/
+
+# Coverage reports
+coverage.xml
+
+# Static analysis tools
+.cache/
+.pytest_cache/
+ruff_cache/
+dmypy.json
