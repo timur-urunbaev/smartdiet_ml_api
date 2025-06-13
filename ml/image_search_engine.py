@@ -4,7 +4,7 @@ Module containing Image Search Engine logic.
 This module provides the core functionality for an image search engine, including building and querying an index of image embeddings.
 """
 
-from typing import List, Tuple, Dict, Any
+from typing import List, Dict, Any
 
 import numpy as np
 import faiss

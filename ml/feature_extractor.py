@@ -1,13 +1,7 @@
 """Feature extraction using pre-trained models."""
 
-import os
-import json
 import logging
-from pathlib import Path
-from typing import List, Tuple, Optional, Dict, Any
-from dataclasses import dataclass
-from datetime import datetime
-import pickle
+from typing import List
 
 import torch
 import torch.nn as nn

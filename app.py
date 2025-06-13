@@ -6,19 +6,16 @@ import tempfile
 import uuid
 from typing import Optional, Dict, Any, List
 from pathlib import Path
-import asyncio
 from datetime import datetime
 
 from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, BackgroundTasks, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
 import uvicorn
 from PIL import Image
-import numpy as np
 
 from api import SearchResult, SearchResponse, HealthResponse, ErrorResponse
-from ml import ImageSearchEngine, Config, setup_logging
+from ml import ImageSearchEngine, Config
 
 
 app = FastAPI(
