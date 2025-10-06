@@ -20,8 +20,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install dependencies with BuildKit cache mount
 # This caches pip downloads and wheels between builds
 COPY requirements.txt .
-RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
-    pip install --upgrade pip && \
+
+RUN pip install --upgrade pip && \
     pip install -r requirements.txt
 
 # Copy application code (separate layer for better caching)
