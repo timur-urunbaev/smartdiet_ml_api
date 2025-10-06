@@ -18,6 +18,8 @@ RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
 # Copy application code (separate layer for better caching)
 COPY . .
 
+RUN mkdir -p /app/cache
+
 EXPOSE 7860
 
 CMD ["python", "app.py"]
