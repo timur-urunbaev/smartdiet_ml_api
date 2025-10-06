@@ -8,4 +8,4 @@ pandas
 polars
 tqdm
 uvicorn
-yaml
+pyyaml
