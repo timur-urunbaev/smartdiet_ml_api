@@ -8,7 +8,7 @@ from .config import Config
 from .data_manager import DataManager
 from .feature_extractor import FeatureExtractor
 from .image_search_engine import ImageSearchEngine
-from .utils import setup_logging, EvaluationUtils
+from .utils import EvaluationUtils
 
 __version__ = "0.1.0"
 __author__ = "Timur Urunbaev"
@@ -21,5 +21,4 @@ __all__ = [
     "FeatureExtractor",
     "ImageSearchEngine",
     "EvaluationUtils",
-    "setup_logging",
 ]

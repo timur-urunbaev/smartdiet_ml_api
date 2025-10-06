@@ -16,7 +16,7 @@ cache/
 cache/*
 
 # Research and Notebooks
-notebooks/
+# notebooks/
 
 # Jupyter notebooks checkpoints
 *.ipynb_checkpoints/

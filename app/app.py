@@ -6,27 +6,55 @@ import tempfile
 import uuid
 from typing import Optional, Dict, Any, List
 from pathlib import Path
-import asyncio
+from contextlib import asynccontextmanager
 from datetime import datetime
 
 from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, BackgroundTasks, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
-import uvicorn
 from PIL import Image
-import numpy as np
 
-from api import SearchResult, SearchResponse, HealthResponse, ErrorResponse
-from ml import ImageSearchEngine, Config, setup_logging
+from api.models import SearchResult, SearchResponse, HealthResponse, ErrorResponse
+from ml.image_search_engine import ImageSearchEngine
+from settings import settings
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager to handle startup and shutdown events."""
+    # Startup
+    global search_engine
+    try:
+        search_engine = ImageSearchEngine()
+        if settings.index_file and settings.metadata_file:
+            print("Loading pre-built search index...")
+            search_engine.load_index()
+        else:
+            print("Building search index from scratch...")
+            search_engine.build_index()
+
+        stats = search_engine.get_statistics()
+        print(f"Search engine initialized successfully!")
+        print(f"Total images: {stats.get('total_images', 0)}")
+        print(f"Unique products: {stats.get('unique_products', 0)}")
+
+    except Exception as e:
+        print(f"Failed to initialize search engine: {e}")
+        raise
+
+    yield
+
+    # Shutdown
+    print("Shutting down Image Search API...")
+    search_engine = None
 
 app = FastAPI(
-    title="Image Similarity Search API",
-    description="A production-ready API for finding similar product images using deep learning",
-    version="1.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc"
+    title=settings.app.name,
+    description=settings.app.description,
+    version=settings.app.version,
+    docs_url=settings.app.docs_url,
+    redoc_url=settings.app.redoc_url,
+    lifespan=lifespan
 )
 
 # Add CORS middleware
@@ -40,7 +68,6 @@ app.add_middleware(
 
 search_engine: Optional[ImageSearchEngine] = None
 app_start_time = datetime.now()
-config = None
 
 # === Dependency Functions ===
 async def get_search_engine():
@@ -129,10 +156,10 @@ def cleanup_temp_file(file_path: str) -> None:
 async def root():
     """Root endpoint with basic API information."""
     return {
-        "message": "Image Similarity Search API",
-        "version": "1.0.0",
-        "docs": "/docs",
-        "health": "/health"
+        "message": settings.app.name,
+        "version": settings.app.version,
+        "docs": settings.app.docs_url,
+        "health": settings.app.health_url
     }
 
 @app.get("/health", response_model=HealthResponse)
@@ -143,7 +170,7 @@ async def health_check(engine: ImageSearchEngine = Depends(get_search_engine)):
 
     return HealthResponse(
         status="healthy",
-        version="1.0.0",
+        version=settings.app.version,
         model_loaded=engine.index is not None,
         total_images=stats.get("total_images", 0),
         uptime_seconds=uptime
@@ -382,55 +409,5 @@ async def general_exception_handler(request, exc):
             error="Internal Server Error",
             message="An unexpected error occurred. Please try again later.",
             timestamp=datetime.now().isoformat()
-        ).dict()
-    )
-
-# === Startup Event ===
-@app.on_event("startup")
-async def startup_event():
-    """Initialize the search engine on startup."""
-    global search_engine, config
-
-    try:
-        # Load configuration
-        config = Config(
-            data_dir=os.getenv("DATA_DIR", "/content/final_images"),
-            batch_size=int(os.getenv("BATCH_SIZE", "16")),
-            similarity_metric=os.getenv("SIMILARITY_METRIC", "cosine"),
-            model_name=os.getenv("MODEL_NAME", "resnet50"),
-            cache_dir=os.getenv("CACHE_DIR", "cache"),
-            log_level=os.getenv("LOG_LEVEL", "INFO")
-        )
-
-        # Initialize search engine
-        search_engine = ImageSearchEngine(config)
-
-        # Build index
-        print("Building search index...")
-        search_engine.build_index()
-
-        # Log statistics
-        stats = search_engine.get_statistics()
-        print(f"Search engine initialized successfully!")
-        print(f"Total images: {stats.get('total_images', 0)}")
-        print(f"Unique products: {stats.get('unique_products', 0)}")
-
-    except Exception as e:
-        print(f"Failed to initialize search engine: {e}")
-        raise
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on shutdown."""
-    print("Shutting down Image Search API...")
-
-# === Main ===
-if __name__ == "__main__":
-    uvicorn.run(
-        "app:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=False,  # Set to True for development
-        workers=1,  # Single worker due to ML model
-        access_log=True
+        ).model_dump()
     )

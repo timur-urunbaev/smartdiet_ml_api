@@ -1,22 +1,27 @@
 [project]
-name = "product-search-api"
+name = "smartdiet-ml-api"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "faiss-cpu>=1.11.0",
-    "fastapi>=0.115.12",
-    "jupyter>=1.1.1",
-    "matplotlib>=3.10.3",
-    "numpy>=2.3.0",
-    "pandas>=2.3.0",
-    "pillow>=11.2.1",
-    "polars>=1.30.0",
-    "python-dotenv>=1.1.0",
-    "python-multipart>=0.0.20",
-    "torch",
-    "torchvision>=0.22.1",
+    "faiss-cpu>=1.12.0",
+    "fastapi>=0.118.0",
+    "gradio>=5.49.0",
+    "pandas>=2.3.3",
+    "pillow>=11.1.0",
+    "pydantic>=2.10.5",
+    "pydantic-settings>=2.11.0",
+    "pyyaml>=6.0.2",
+    "torch>=2.8.0",
+    "torchvision>=0.23.0",
     "tqdm>=4.67.1",
-    "uvicorn>=0.34.3",
+    "uvicorn>=0.37.0",
+]
+
+[dependency-groups]
+dev = [
+    "ipython>=9.6.0",
+    "jupyter>=1.1.1",
+    "ruff>=0.13.3",
 ]

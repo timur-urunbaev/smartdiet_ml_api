@@ -1,5 +1,5 @@
 from typing import Optional, List
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field
 
 class SearchResult(BaseModel):
     """Search result model for API response."""

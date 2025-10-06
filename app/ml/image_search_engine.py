@@ -4,29 +4,55 @@ Module containing Image Search Engine logic.
 This module provides the core functionality for an image search engine, including building and querying an index of image embeddings.
 """
 
-from typing import List, Tuple, Dict, Any
+import logging
+from typing import List, Dict, Any
+from pathlib import Path
 
 import numpy as np
 import faiss
 
-from .config import Config
+from settings import settings
 from .feature_extractor import FeatureExtractor
 from .data_manager import DataManager
-from .utils import setup_logging
+
+from logging_config import setup_logging
+
+setup_logging()
 
 
 # === Search Engine Class ===
 class ImageSearchEngine:
     """Main search engine for image retrieval."""
 
-    def __init__(self, config: Config):
-        self.config = config
-        self.logger = setup_logging(config)
-        self.feature_extractor = FeatureExtractor(config, self.logger)
-        self.data_manager = DataManager(config, self.logger)
+    def __init__(self):
+        self.logger = logging.getLogger(__name__)
+        self.feature_extractor = FeatureExtractor(self.logger)
+        self.data_manager = DataManager(self.logger)
         self.index = None
         self.image_paths = []
         self.product_ids = []
+
+    def load_index(self) -> None:
+        """Load pre-built FAISS index and metadata (for production use)."""
+        if not settings.index_file or not settings.metadata_file:
+            raise ValueError("index_file and metadata_file must be specified in config")
+
+        index_path = Path(settings.index_file)
+        if not index_path.exists():
+            raise FileNotFoundError(f"Index file not found: {index_path}")
+
+        # Load FAISS index
+        self.logger.info(f"Loading pre-built index from {index_path}")
+        self.index = faiss.read_index(str(index_path))
+        self.logger.info(f"Loaded FAISS index with {self.index.ntotal} vectors")
+
+        # Load metadata
+        metadata = self.data_manager.load_metadata()
+        if not metadata:
+            raise ValueError("Failed to load metadata")
+
+        self.image_paths, self.product_ids = metadata
+        self.logger.info(f"Loaded {len(self.image_paths)} image paths and {len(set(self.product_ids))} unique products")
 
     def build_index(self, force_rebuild: bool = False) -> None:
         """Build or load the search index."""
@@ -58,7 +84,7 @@ class ImageSearchEngine:
         """Create FAISS index from embeddings."""
         dimension = embeddings.shape[1]
 
-        if self.config.similarity_metric == "cosine":
+        if settings.ml.similarity_metric == "cosine":
             # Normalize embeddings for cosine similarity
             faiss.normalize_L2(embeddings)
             self.index = faiss.IndexFlatIP(dimension)  # Inner product for cosine
@@ -76,7 +102,7 @@ class ImageSearchEngine:
         # Extract query features
         query_features = self.feature_extractor.extract_features(query_image_path)
 
-        if self.config.similarity_metric == "cosine":
+        if settings.ml.similarity_metric == "cosine":
             query_features = query_features.reshape(1, -1).astype('float32')
             faiss.normalize_L2(query_features)
         else:
@@ -94,7 +120,7 @@ class ImageSearchEngine:
                     'image_path': self.image_paths[idx],
                     'product_id': self.product_ids[idx],
                     'distance': float(dist),
-                    'similarity': 1.0 / (1.0 + dist) if self.config.similarity_metric == "l2" else float(dist)
+                    'similarity': 1.0 / (1.0 + dist) if settings.ml.similarity_metric == "l2" else float(dist)
                 })
 
         return results

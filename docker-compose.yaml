@@ -1,0 +1,36 @@
+services:
+  api:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+      cache_from:
+        - smartdiet-api:latest
+      args:
+        BUILDKIT_INLINE_CACHE: 1
+    image: smartdiet-api:latest
+    restart: always
+    ports:
+      - "${ML_API_PORT:-8000}:8000"
+    volumes:
+      - ./app/data:/app/data
+      - ./app/cache:/app/cache
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+      cache_from:
+        - smartdiet-web:latest
+      args:
+        BUILDKIT_INLINE_CACHE: 1
+    image: smartdiet-web:latest
+    restart: always
+    ports:
+      - "${WEB_PORT:-7860}:7860"
+    depends_on:
+      - api
+    environment:
+      - SMARTDIET_API_URL=http://api:8000
+      - PYTHONUNBUFFERED=1

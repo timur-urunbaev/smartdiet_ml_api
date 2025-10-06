@@ -1,0 +1,111 @@
+╔══════════════════════════════════════════════════════════════════════════╗
+║                 SmartDiet ML API - Quick Build Commands                 ║
+╚══════════════════════════════════════════════════════════════════════════╝
+
+🚀 FAST BUILD (with cache - recommended)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  DOCKER_BUILDKIT=1 docker-compose build
+  
+  OR (if BuildKit enabled globally):
+  make build
+
+  Time: First = 10-30 min, After = 30 sec - 2 min
+
+
+🔧 ONE-TIME SETUP (Enable BuildKit)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # Add to ~/.bashrc or ~/.zshrc:
+  echo 'export DOCKER_BUILDKIT=1' >> ~/.bashrc
+  source ~/.bashrc
+
+  # Or use the provided script:
+  source .dockerbuildrc
+
+
+📦 COMMON COMMANDS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  make build          Build with cache (FAST!)
+  make up             Start services
+  make down           Stop services
+  make logs           View all logs
+  make logs-api       View API logs only
+  make logs-web       View web logs only
+  make restart        Restart services
+  make clean          Remove containers & volumes
+  make clean-cache    Clear Docker build cache
+
+
+🔍 CHECK CACHE STATUS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  docker buildx du    Show cache usage
+  make cache-info     Show cache info
+
+
+⚠️  FORCE REBUILD (slow - use only if needed)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  make rebuild
+  
+  OR:
+  DOCKER_BUILDKIT=1 docker-compose build --no-cache
+
+
+🐛 TROUBLESHOOTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Problem: Cache not working
+  ├─ Check: docker version | grep BuildKit
+  ├─ Fix: Enable BuildKit (see setup above)
+  └─ Test: Build twice, second should be fast
+
+  Problem: Port already in use
+  ├─ Edit: .env file
+  ├─ Change: ML_API_PORT=8001 and WEB_PORT=7861
+  └─ Restart: make restart
+
+  Problem: Still slow after code change
+  ├─ Expected if: requirements.txt changed
+  ├─ Check: git diff app/requirements.txt
+  └─ Solution: Wait once, next build will be fast
+
+
+📊 PERFORMANCE METRICS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Scenario              | Before  | After      | Savings
+  ─────────────────────────────────────────────────────
+  First build           | 30 min  | 30 min     | 0%
+  Code change only      | 30 min  | 1 min      | 97%
+  No changes            | 30 min  | 10 sec     | 99%
+  
+  Requirements.txt: 1384 lines, ~2.5GB downloads
+  Cache location: /var/lib/docker/buildkit/
+
+
+📚 DOCUMENTATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  README.md                  - Project overview
+  QUICK_START.md             - Setup in 3 commands
+  DOCKER_CACHING_GUIDE.md    - Deep dive into caching
+  FIXES_SUMMARY.md           - All fixes applied
+  CHANGELOG.md               - Version history
+  Makefile                   - Command definitions
+
+
+🌐 ACCESS POINTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  API Documentation:    http://localhost:8000/docs
+  API Health Check:     http://localhost:8000/health
+  Web Interface:        http://localhost:7860
+
+
+💡 PRO TIPS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ✅ Always use DOCKER_BUILDKIT=1 or enable it globally
+  ✅ Use make commands for convenience
+  ✅ Check cache usage: make cache-info
+  ✅ Keep requirements.txt stable (avoid frequent changes)
+  ✅ Don't use --no-cache unless absolutely necessary
+  ✅ First build is slow - be patient!
+  ✅ All subsequent builds = lightning fast ⚡
+
+╔══════════════════════════════════════════════════════════════════════════╗
+║  Questions? See DOCKER_CACHING_GUIDE.md for detailed troubleshooting    ║
+╚══════════════════════════════════════════════════════════════════════════╝

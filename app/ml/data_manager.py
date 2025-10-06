@@ -11,14 +11,13 @@ import pickle
 
 import numpy as np
 
-from .config import Config
+from settings import settings
 
 
 class DataManager:
     """Manages dataset loading and caching."""
 
-    def __init__(self, config: Config, logger: logging.Logger):
-        self.config = config
+    def __init__(self, logger: logging.Logger):
         self.logger = logger
 
     def load_dataset(self) -> Tuple[List[str], List[str]]:
@@ -26,9 +25,9 @@ class DataManager:
         image_paths = []
         product_ids = []
 
-        data_path = Path(self.config.data_dir)
+        data_path = Path(settings.ml.data_dir)
         if not data_path.exists():
-            raise FileNotFoundError(f"Dataset directory not found: {self.config.data_dir}")
+            raise FileNotFoundError(f"Dataset directory not found: {settings.ml.data_dir}")
 
         for folder in data_path.iterdir():
             if not folder.is_dir():
@@ -45,13 +44,17 @@ class DataManager:
     def save_embeddings(self, embeddings: np.ndarray, image_paths: List[str],
                        product_ids: List[str]) -> None:
         """Save embeddings and metadata to cache."""
-        cache_file = Path(self.config.cache_dir) / "embeddings.pkl"
+        cache_file = Path(settings.ml.cache_dir) / "embeddings.pkl"
 
         data = {
             'embeddings': embeddings,
             'image_paths': image_paths,
             'product_ids': product_ids,
-            'config': self.config,
+            'config': {
+                'model_name': settings.ml.model_name,
+                'embedding_dim': settings.ml.embedding_dim,
+                'similarity_metric': settings.ml.similarity_metric
+            },
             'timestamp': datetime.now().isoformat()
         }
 
@@ -62,7 +65,7 @@ class DataManager:
 
     def load_embeddings(self) -> Optional[Tuple[np.ndarray, List[str], List[str]]]:
         """Load embeddings from cache if available."""
-        cache_file = Path(self.config.cache_dir) / "embeddings.pkl"
+        cache_file = Path(settings.ml.cache_dir) / "embeddings.pkl"
 
         if not cache_file.exists():
             return None
@@ -75,4 +78,27 @@ class DataManager:
             return data['embeddings'], data['image_paths'], data['product_ids']
         except Exception as e:
             self.logger.warning(f"Failed to load cache: {e}")
+            return None
+
+    def load_metadata(self) -> Optional[Tuple[List[str], List[str]]]:
+        """Load metadata (image paths and product IDs) from metadata file."""
+        if not settings.metadata_file:
+            return None
+
+        metadata_path = Path(settings.metadata_file)
+        if not metadata_path.exists():
+            self.logger.warning(f"Metadata file not found: {metadata_path}")
+            return None
+
+        try:
+            with open(metadata_path, 'rb') as f:
+                metadata = pickle.load(f)
+
+            image_paths = metadata.get('image_paths', [])
+            product_ids = metadata.get('product_ids', [])
+
+            self.logger.info(f"Loaded metadata from {metadata_path}: {len(image_paths)} images, {len(set(product_ids))} products")
+            return image_paths, product_ids
+        except Exception as e:
+            self.logger.error(f"Failed to load metadata: {e}")
             return None

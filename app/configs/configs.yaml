@@ -1,0 +1,37 @@
+api:  
+  name: "SmartDiet ML API"
+  version: "v0.1.0"
+  description: "SmartDiet ML API - (Image Similarity Search API) for food image recognition and dietary recommendations."
+
+  api_prefix: "/api/v1"
+  docs_url: "/docs"
+  redoc_url: "/redoc"
+  health_url: "/health"
+
+logging:
+  level: INFO
+  format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+  datefmt: "%Y-%m-%d %H:%M:%S"
+  
+  log_file: "app.log"
+  max_bytes: 5_000_000  # 5MB
+  backup_count: 5
+
+model:
+  image_emb_model: resnet50
+  weights: IMAGENET1K_V2
+
+ml:
+  device: cpu
+  img_size: 224
+  batch_size: 32
+  embedding_dim: 2048
+  model_name: resnet50
+  similarity_metric: cosine
+  index_type: flat
+  data_dir: /app/data
+  cache_dir: /app/cache
+
+index_file: /app/data/smart_diet_v0.1.index
+metadata_file: /app/data/metadata.pkl
+image_dir: /app/data/images

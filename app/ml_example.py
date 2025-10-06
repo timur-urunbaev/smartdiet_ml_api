@@ -1,20 +1,29 @@
 """Main function demonstrating usage."""
 
-from ml import Config, ImageSearchEngine
+from pathlib import Path
+from ml.image_search_engine import ImageSearchEngine
+from settings import settings
+
+from logging_config import setup_logging
+
+setup_logging()
+
+import logging
+logger = logging.getLogger(__name__)
 
 
 def main():
     """Main function demonstrating usage."""
     # Configuration
-    config = Config(
-        data_dir="/home/nedogeek/Documents/graduation_project/datasets/final_images",
-        batch_size=16,
-        similarity_metric="cosine",
-        log_level="INFO"
-    )
+    config = {
+        "data_dir": Path(settings.ml.data_dir) / "index_images",
+        "batch_size": settings.ml.batch_size,
+        "similarity_metric": settings.ml.similarity_metric,
+        "log_level": settings.logging.level
+    }
 
     # Initialize search engine
-    search_engine = ImageSearchEngine(config)
+    search_engine = ImageSearchEngine(**config)
 
     # Build index
     search_engine.build_index()
