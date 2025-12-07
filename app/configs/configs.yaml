@@ -29,9 +29,9 @@ ml:
   model_name: resnet50
   similarity_metric: cosine
   index_type: flat
-  data_dir: /app/data
+  data_dir: /app/data/images
   cache_dir: /app/cache
 
-index_file: /app/data/smart_diet_v0.1.index
-metadata_file: /app/data/metadata.pkl
-image_dir: /app/data/images
+# Docker paths - the index folder is mounted as /app/index
+index_file: /app/index/products.index
+metadata_file: /app/index/products_metadata.json

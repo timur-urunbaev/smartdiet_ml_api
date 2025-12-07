@@ -12,25 +12,13 @@ services:
     ports:
       - "${ML_API_PORT:-8000}:8000"
     volumes:
-      - ./app/data:/app/data
+      - ./index:/app/index:ro
       - ./app/cache:/app/cache
     environment:
       - PYTHONUNBUFFERED=1
-
-  web:
-    build:
-      context: ./web
-      dockerfile: Dockerfile
-      cache_from:
-        - smartdiet-web:latest
-      args:
-        BUILDKIT_INLINE_CACHE: 1
-    image: smartdiet-web:latest
-    restart: always
-    ports:
-      - "${WEB_PORT:-7860}:7860"
-    depends_on:
-      - api
-    environment:
-      - SMARTDIET_API_URL=http://api:8000
-      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s

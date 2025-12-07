@@ -2,7 +2,7 @@
 
 import yaml
 from pathlib import Path
-from typing import Optional, Literal, Union
+from typing import Optional, Literal
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -16,7 +16,7 @@ ENV_PATH = BASE_DIR / ".env"
 class AppConfig(BaseSettings):
     """Application configuration"""
 
-    name: str  = Field(..., description="Application name")
+    name: str = Field(..., description="Application name")
     version: str = Field(..., description="Application version")
     description: str = Field(..., description="Application description")
 
@@ -89,7 +89,7 @@ class Settings(BaseSettings):
     secrets: SecretsConfig
     logging: LoggingConfig
     index_file: Optional[str] = Field(None, description="Path to pre-built FAISS index file")
-    metadata_file: Optional[str] = Field(None, description="Path to metadata pickle file")
+    metadata_file: Optional[str] = Field(None, description="Path to metadata JSON file")
     image_dir: Optional[str] = Field(None, description="Path to image directory")
 
     @classmethod
@@ -104,7 +104,8 @@ class Settings(BaseSettings):
                 "logging": yaml_data.get("logging", {}),
                 "secrets": yaml_data.get("secrets", {}),
                 "index_file": yaml_data.get("index_file"),
-                "metadata_file": yaml_data.get("metadata_file")
+                "metadata_file": yaml_data.get("metadata_file"),
+                "image_dir": yaml_data.get("image_dir")
             }
         )
 

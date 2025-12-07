@@ -1,7 +1,7 @@
 # SmartDiet ML API - Makefile
 # Quick commands for common operations
 
-.PHONY: help build up down logs clean rebuild test shell
+.PHONY: help build up down logs clean rebuild test shell local
 
 # Default target
 help:
@@ -12,13 +12,13 @@ help:
 	@echo "make down           - Stop all services"
 	@echo "make logs           - Show logs (Ctrl+C to exit)"
 	@echo "make logs-api       - Show API logs only"
-	@echo "make logs-web       - Show web logs only"
 	@echo "make rebuild        - Force rebuild without cache"
 	@echo "make clean          - Remove containers and volumes"
 	@echo "make clean-cache    - Clear Docker build cache"
 	@echo "make shell-api      - Open shell in API container"
-	@echo "make shell-web      - Open shell in web container"
 	@echo "make test           - Run tests (if available)"
+	@echo "make local          - Run API locally (requires uv)"
+	@echo "make local-config   - Switch to local config"
 	@echo ""
 
 # Build with cache (FAST after first build)
@@ -46,9 +46,6 @@ logs:
 logs-api:
 	docker-compose logs -f api
 
-logs-web:
-	docker-compose logs -f web
-
 # Force rebuild without cache (use sparingly)
 rebuild:
 	@echo "⚠️  Force rebuilding without cache (this will be slow)..."
@@ -70,9 +67,6 @@ clean-cache:
 shell-api:
 	docker-compose exec api /bin/bash
 
-shell-web:
-	docker-compose exec web /bin/bash
-
 # Run tests (customize as needed)
 test:
 	@echo "🧪 Running tests..."
@@ -93,3 +87,19 @@ start: build up
 dev:
 	@echo "🔧 Starting in development mode..."
 	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml up
+
+# Run API locally without Docker (requires uv)
+local:
+	@echo "🚀 Starting API locally..."
+	cd app && uv run uvicorn app:app --host 0.0.0.0 --port 8000 --reload
+
+# Switch to local config for development
+local-config:
+	@echo "📝 Switching to local config..."
+	cp app/configs/configs.local.yaml app/configs/configs.yaml
+	@echo "✅ Config switched! Run 'make local' to start the API."
+
+# Switch back to Docker config
+docker-config:
+	@echo "📝 Switching to Docker config..."
+	@echo "Please restore app/configs/configs.yaml with Docker paths"

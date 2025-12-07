@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from PIL import Image
 
-from api.models import SearchResult, SearchResponse, HealthResponse, ErrorResponse
+from api.models import SearchResult, SearchResponse, HealthResponse, ErrorResponse, NutritionInfo, ProductInfo
 from ml.image_search_engine import ImageSearchEngine
 from settings import settings
 
@@ -35,7 +35,7 @@ async def lifespan(app: FastAPI):
 
         stats = search_engine.get_statistics()
         print(f"Search engine initialized successfully!")
-        print(f"Total images: {stats.get('total_images', 0)}")
+        print(f"Total products in index: {stats.get('total_images', 0)}")
         print(f"Unique products: {stats.get('unique_products', 0)}")
 
     except Exception as e:
@@ -105,6 +105,20 @@ def get_confidence_level(similarity: float) -> str:
     else:
         return "Low"
 
+async def load_image_from_upload(file: UploadFile) -> Image.Image:
+    """Load PIL Image from uploaded file."""
+    try:
+        content = await file.read()
+        image = Image.open(io.BytesIO(content))
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+        return image
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid image file: {str(e)}"
+        )
+
 async def save_temp_image(file: UploadFile) -> str:
     """Save uploaded image to temporary file."""
     try:
@@ -150,6 +164,28 @@ def cleanup_temp_file(file_path: str) -> None:
     except Exception:
         pass  # Ignore cleanup errors
 
+def format_search_result(result: Dict[str, Any], rank: int) -> SearchResult:
+    """Format a raw search result into SearchResult model."""
+    nutrition = None
+    if result.get('nutrition'):
+        nutrition = NutritionInfo(
+            calories=result['nutrition'].get('calories', -1.0),
+            protein=result['nutrition'].get('protein', -1.0),
+            fat=result['nutrition'].get('fat', -1.0),
+            carbohydrates=result['nutrition'].get('carbohydrates', -1.0)
+        )
+    
+    return SearchResult(
+        rank=rank,
+        product_id=result.get('product_id', ''),
+        title=result.get('title', ''),
+        category=result.get('category', ''),
+        distance=result.get('distance', 0.0),
+        similarity=result.get('similarity', 0.0),
+        confidence=get_confidence_level(result.get('similarity', 0.0)),
+        nutrition=nutrition
+    )
+
 # === API Endpoints ===
 
 @app.get("/", response_model=Dict[str, str])
@@ -190,11 +226,13 @@ async def search_similar_images(
     engine: ImageSearchEngine = Depends(get_search_engine)
 ):
     """
-    Search for similar images.
+    Search for similar food products by image.
 
     - **file**: Upload an image file (JPEG, PNG, WebP)
-    - **top_k**: Number of similar images to return (1-20)
+    - **top_k**: Number of similar products to return (1-20)
     - **min_similarity**: Minimum similarity threshold (0.0-1.0)
+    
+    Returns matched products with nutrition information.
     """
     query_id = str(uuid.uuid4())
     start_time = datetime.now()
@@ -212,16 +250,9 @@ async def search_similar_images(
 
         # Filter by minimum similarity and format results
         filtered_results = []
-        for result in raw_results:
+        for i, result in enumerate(raw_results):
             if result['similarity'] >= min_similarity:
-                search_result = SearchResult(
-                    rank=result['rank'],
-                    product_id=result['product_id'],
-                    image_path=result['image_path'],
-                    distance=result['distance'],
-                    similarity=result['similarity'],
-                    confidence=get_confidence_level(result['similarity'])
-                )
+                search_result = format_search_result(result, i + 1)
                 filtered_results.append(search_result)
 
         # Calculate processing time
@@ -291,16 +322,9 @@ async def search_batch_images(
 
             # Filter and format results
             filtered_results = []
-            for result in raw_results:
+            for j, result in enumerate(raw_results):
                 if result['similarity'] >= min_similarity:
-                    search_result = SearchResult(
-                        rank=result['rank'],
-                        product_id=result['product_id'],
-                        image_path=result['image_path'],
-                        distance=result['distance'],
-                        similarity=result['similarity'],
-                        confidence=get_confidence_level(result['similarity'])
-                    )
+                    search_result = format_search_result(result, j + 1)
                     filtered_results.append(search_result)
 
             # Calculate processing time
@@ -331,7 +355,35 @@ async def search_batch_images(
             detail=f"Batch processing error: {str(e)}"
         )
 
-@app.get("/search/product/{product_id}")
+@app.get("/product/{product_id}", response_model=ProductInfo)
+async def get_product(
+    product_id: str,
+    engine: ImageSearchEngine = Depends(get_search_engine)
+):
+    """
+    Get product information by product ID.
+    """
+    product_info = engine.get_product_info(product_id)
+    
+    if not product_info:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Product '{product_id}' not found"
+        )
+    
+    return ProductInfo(
+        product_id=product_info['product_id'],
+        title=product_info['title'],
+        category=product_info['category'],
+        nutrition=NutritionInfo(
+            calories=product_info['calories'],
+            protein=product_info['protein'],
+            fat=product_info['fat'],
+            carbohydrates=product_info['carbohydrates']
+        )
+    )
+
+@app.get("/search/product/{product_id}", response_model=SearchResponse)
 async def search_by_product_id(
     product_id: str,
     top_k: int = Query(default=5, ge=1, le=20),
@@ -339,51 +391,78 @@ async def search_by_product_id(
 ):
     """
     Find similar products by product ID.
-    Uses the first image of the specified product as query.
+    Returns products similar to the specified product.
     """
-    # Find first image with matching product_id
-    query_image_path = None
+    # Find the index of the product
+    product_index = None
     for i, pid in enumerate(engine.product_ids):
         if pid == product_id:
-            query_image_path = engine.image_paths[i]
+            product_index = i
             break
 
-    if not query_image_path:
+    if product_index is None:
         raise HTTPException(
             status_code=404,
             detail=f"Product ID '{product_id}' not found in dataset"
         )
 
-    # Perform search
     query_id = str(uuid.uuid4())
     start_time = datetime.now()
 
-    raw_results = engine.search(query_image_path, top_k=top_k + 1)  # +1 to exclude self
-
-    # Filter out the query image itself and format results
-    filtered_results = []
-    for result in raw_results:
-        if result['image_path'] != query_image_path:  # Exclude self
-            search_result = SearchResult(
-                rank=len(filtered_results) + 1,  # Re-rank after filtering
-                product_id=result['product_id'],
-                image_path=result['image_path'],
-                distance=result['distance'],
-                similarity=result['similarity'],
-                confidence=get_confidence_level(result['similarity'])
-            )
-            filtered_results.append(search_result)
-
-            if len(filtered_results) >= top_k:
+    # Get the embedding for this product from the index and search
+    # We need to get more results to filter out the query product itself
+    if engine.index is not None:
+        import faiss
+        import numpy as np
+        
+        # Reconstruct the vector for this product
+        vector = np.zeros((1, engine.index.d), dtype='float32')
+        engine.index.reconstruct(product_index, vector[0])
+        
+        # Search for similar products
+        distances, indices = engine.index.search(vector, top_k + 1)
+        
+        # Format results, excluding the query product
+        results = []
+        for i, (dist, idx) in enumerate(zip(distances[0], indices[0])):
+            if idx == product_index:  # Skip the query product itself
+                continue
+            if idx < 0:  # Invalid index
+                continue
+            
+            result = {
+                'rank': len(results) + 1,
+                'index': int(idx),
+                'distance': float(dist),
+                'similarity': float(dist) if settings.ml.similarity_metric == "cosine" else 1.0 / (1.0 + dist)
+            }
+            
+            product_meta = engine.data_manager.get_product_by_index(int(idx))
+            if product_meta:
+                result.update({
+                    'product_id': product_meta.product_id,
+                    'title': product_meta.title,
+                    'category': product_meta.category,
+                    'nutrition': {
+                        'calories': product_meta.calories,
+                        'protein': product_meta.protein,
+                        'fat': product_meta.fat,
+                        'carbohydrates': product_meta.carbohydrates
+                    }
+                })
+            
+            results.append(format_search_result(result, len(results) + 1))
+            
+            if len(results) >= top_k:
                 break
 
     processing_time = (datetime.now() - start_time).total_seconds() * 1000
 
     return SearchResponse(
         query_id=query_id,
-        total_results=len(filtered_results),
+        total_results=len(results),
         processing_time_ms=round(processing_time, 2),
-        results=filtered_results,
+        results=results,
         timestamp=datetime.now().isoformat()
     )
 
@@ -397,7 +476,7 @@ async def http_exception_handler(request, exc):
             error=f"HTTP {exc.status_code}",
             message=exc.detail,
             timestamp=datetime.now().isoformat()
-        ).dict()
+        ).model_dump()
     )
 
 @app.exception_handler(Exception)

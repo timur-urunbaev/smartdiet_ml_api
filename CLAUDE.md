@@ -11,56 +11,52 @@ SmartDiet ML API is a FastAPI-based image similarity search service that uses de
 ### Development
 ```bash
 # Run the API server
-python app.py
+cd app && python app.py
 
 # Run with hot reload (development mode)
-# Edit app.py line 433: reload=True
 uvicorn app:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 ### Docker
 ```bash
-# Build Docker image
-docker build -t smartdiet-ml-api .
+# Build and start with Makefile (recommended)
+make build && make up
 
-# Run container
-docker run -p 8000:8000 smartdiet-ml-api
+# Or manually
+export DOCKER_BUILDKIT=1
+docker-compose up -d
 ```
 
 ### Package Management
 The project uses `uv` for dependency management:
 ```bash
-# Install dependencies
-uv sync
-
-# Add new dependency
-uv add <package-name>
-```
-
-Alternatively, pip with requirements.txt:
-```bash
-pip install -r requirements.txt
+uv sync           # Install dependencies
+uv add <package>  # Add new dependency
 ```
 
 ## Architecture
 
 ### Core Components
 
-1. **FastAPI Application** (`app.py`)
+1. **FastAPI Application** (`app/app.py`)
    - Main HTTP server with RESTful endpoints
    - Handles image upload, validation, and temporary file management
-   - Startup event initializes search engine and builds/loads FAISS index
+   - Lifespan context manager initializes search engine and builds/loads FAISS index
    - Single worker setup due to ML model (not thread-safe)
 
-2. **ML Pipeline** (`ml/`)
+2. **ML Pipeline** (`app/ml/`)
    - `ImageSearchEngine`: Orchestrates the search system, manages FAISS index
    - `FeatureExtractor`: Loads pre-trained models (ResNet50/EfficientNet) and extracts embeddings
    - `DataManager`: Handles dataset loading and embedding cache persistence (pickle format)
-   - `Config`: Dataclass for configuration parameters
+   - `EvaluationUtils`: Precision@K and Recall@K metrics
 
-3. **API Models** (`api/models.py`)
+3. **API Models** (`app/api/models.py`)
    - Pydantic models for request/response validation
    - `SearchResult`, `SearchResponse`, `HealthResponse`, `ErrorResponse`
+
+4. **Web Interface** (`web/app.py`)
+   - Gradio-based UI for image upload and restriction checking
+   - Connects to ML API via HTTP
 
 ### Data Flow
 
@@ -70,20 +66,21 @@ pip install -r requirements.txt
 ### Configuration
 
 Configuration is managed via:
-- Environment variables (see `app.py:396-403`)
-- YAML config file (`configs/configs.yaml`)
-- `Config` dataclass defaults (`ml/config.py`)
+- YAML config file (`app/configs/configs.yaml`)
+- Pydantic settings (`app/settings.py`)
+- Environment variables
 
-Key environment variables:
-- `DATA_DIR`: Path to image dataset (default: `/content/final_images`)
-- `MODEL_NAME`: Model architecture (default: `resnet50`)
-- `SIMILARITY_METRIC`: Distance metric (`cosine` or `l2`)
-- `BATCH_SIZE`: Feature extraction batch size
-- `CACHE_DIR`: Embeddings cache location
+Key settings:
+- `device`: PyTorch device (cpu/cuda)
+- `model_name`: Model architecture (resnet50/efficientnet_b0)
+- `similarity_metric`: Distance metric (cosine/l2)
+- `data_dir`: Path to image dataset
+- `cache_dir`: Embeddings cache location
+- `index_file`: Pre-built FAISS index path
+- `metadata_file`: Pre-built metadata path
 
 ### Dataset Structure
 
-Expected dataset layout:
 ```
 data_dir/
 ├── product_1/
@@ -104,7 +101,7 @@ The system caches extracted embeddings in `cache/embeddings.pkl` to avoid recomp
 - Configuration snapshot
 - Timestamp
 
-To force rebuild: modify `ImageSearchEngine.build_index(force_rebuild=True)`
+To force rebuild: `ImageSearchEngine.build_index(force_rebuild=True)`
 
 ## API Endpoints
 
@@ -115,11 +112,57 @@ To force rebuild: modify `ImageSearchEngine.build_index(force_rebuild=True)`
 - `GET /stats`: Dataset statistics
 - `GET /`: API information
 
+## Project Structure
+
+```
+smartdiet-mlapi/
+├── app/                       # ML API Service
+│   ├── api/                   # Pydantic models
+│   │   ├── __init__.py
+│   │   ├── models.py
+│   │   └── README.md
+│   ├── ml/                    # ML pipeline
+│   │   ├── __init__.py
+│   │   ├── image_search_engine.py
+│   │   ├── feature_extractor.py
+│   │   ├── data_manager.py
+│   │   ├── utils.py
+│   │   └── README.md
+│   ├── configs/
+│   │   └── configs.yaml
+│   ├── notebooks/
+│   │   └── build_index.ipynb
+│   ├── app.py
+│   ├── settings.py
+│   ├── logging_config.py
+│   ├── Dockerfile
+│   └── requirements.txt
+├── web/                       # Gradio Web Interface
+│   ├── app.py
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   └── README.md
+├── docker-compose.yaml
+├── Makefile
+├── pyproject.toml
+├── README.md
+├── CLAUDE.md
+└── IMPROVEMENTS.md
+```
+
 ## Important Notes
 
-- **Single Worker**: FastAPI runs with 1 worker because PyTorch models are not thread-safe. For scaling, use multiple processes with load balancing.
-- **CORS**: Currently set to allow all origins (`allow_origins=["*"]`). Configure for production.
-- **File Cleanup**: Uploaded images are stored in temp directory and cleaned up via background tasks.
+- **Single Worker**: FastAPI runs with 1 worker because PyTorch models are not thread-safe
+- **CORS**: Currently set to allow all origins (`allow_origins=["*"]`). Configure for production
+- **File Cleanup**: Uploaded images are stored in temp directory and cleaned up via background tasks
 - **Similarity Metrics**:
   - `cosine`: Higher score = more similar (uses inner product after L2 normalization)
   - `l2`: Lower distance = more similar (Euclidean distance)
+
+## Documentation
+
+- [Main README](README.md) - Project overview and quick start
+- [API Module](app/api/README.md) - Pydantic models documentation
+- [ML Module](app/ml/README.md) - ML pipeline documentation  
+- [Web Module](web/README.md) - Gradio interface documentation
+- [Improvements](IMPROVEMENTS.md) - Future enhancement plan

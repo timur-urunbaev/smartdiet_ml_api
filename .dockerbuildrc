@@ -1,9 +1,0 @@
-# Docker Build Configuration
-# Source this file to enable BuildKit permanently
-# Usage: source .dockerbuildrc
-
-export DOCKER_BUILDKIT=1
-export COMPOSE_DOCKER_CLI_BUILD=1
-
-echo "✅ Docker BuildKit enabled!"
-echo "   Now you can use: docker-compose build (without DOCKER_BUILDKIT=1 prefix)"
