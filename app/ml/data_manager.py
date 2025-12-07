@@ -19,8 +19,8 @@ class ProductMetadata:
     """Product metadata container."""
     
     def __init__(self, data: Dict[str, Any]):
-        self.id = data.get("id")
-        self.product_id = data.get("_id", "")
+        self.id = data.get("_id")
+        self.product_id = data.get("id", "")
         self.title = data.get("title", "")
         self.category = data.get("category", "")
         self.calories = data.get("calories", -1.0)

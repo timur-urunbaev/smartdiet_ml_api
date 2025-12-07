@@ -13,7 +13,7 @@ class NutritionInfo(BaseModel):
 class SearchResult(BaseModel):
     """Search result model for API response."""
     rank: int = Field(..., description="Rank of the result (1-based)")
-    product_id: str = Field(..., description="Product identifier")
+    product_id: int = Field(..., description="Product identifier")
     title: str = Field(default="", description="Product title/name")
     category: str = Field(default="", description="Product category")
     distance: float = Field(..., description="Distance metric value")
@@ -51,7 +51,7 @@ class ErrorResponse(BaseModel):
 
 class ProductInfo(BaseModel):
     """Full product information model."""
-    product_id: str = Field(..., description="Product identifier")
+    product_id: int = Field(..., description="Product identifier")
     title: str = Field(..., description="Product title/name")
     category: str = Field(..., description="Product category")
     nutrition: NutritionInfo = Field(..., description="Nutrition information")
